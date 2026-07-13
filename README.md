@@ -316,7 +316,7 @@ This is the only time you'll need to interact with the bot by hand. It needs
 you to prove, once, that you own Channel B.
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 python main.py
 ```
 
