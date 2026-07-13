@@ -1,0 +1,17 @@
+# Private account state -- never commit or upload these files.
+config.yaml
+credentials/
+shorts.db
+shorts.db-shm
+shorts.db-wal
+state.json
+
+# Generated files.
+downloads/
+logs/
+__pycache__/
+*.py[cod]
+.venv/
+
+# Locally exported phone-transfer bundle.
+yt-reposter-private/
