@@ -167,13 +167,13 @@ folder (`cd ~/yt-reposter`).
 Still inside the project folder:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-`source venv/bin/activate` needs to be run **every time you open a new
+`source .venv/bin/activate` needs to be run **every time you open a new
 terminal** before running the bot. (The restart-forever script in
 [section 10](#10-keep-it-running-forever) already does this for you.)
 
@@ -363,7 +363,7 @@ Paste this in:
 ```bash
 #!/bin/bash
 cd ~/yt-reposter
-source venv/bin/activate
+source .venv/bin/activate
 while true; do
   python main.py
   echo "Bot exited, restarting in 10 seconds..."
