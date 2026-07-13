@@ -8,7 +8,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
 pkg update -y
-pkg install -y python ffmpeg nodejs git
+pkg install -y python python-pip python-ensurepip-wheels ffmpeg nodejs git
 chmod +x termux/*.sh
 
 python -m venv .venv
