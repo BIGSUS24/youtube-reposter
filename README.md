@@ -20,8 +20,8 @@ install Termux from F-Droid and then run:
 
 ```sh
 pkg install -y git
-git clone <YOUR-GITHUB-REPOSITORY-URL> ~/yt-reposter
-cd ~/yt-reposter
+git clone <YOUR-GITHUB-REPOSITORY-URL> youtube-reposter
+cd ~/youtube-reposter
 sh termux/install.sh
 termux-setup-storage
 ```
@@ -30,7 +30,7 @@ Place the private bundle at
 `~/storage/downloads/yt-reposter-private/`, then import and start it:
 
 ```sh
-cd ~/yt-reposter
+cd ~/youtube-reposter
 sh termux/import-private-state.sh
 nohup sh termux/service.sh >/dev/null 2>&1 &
 ```
@@ -45,13 +45,13 @@ For automatic recovery after a full phone reboot, install the separate
 
 ```sh
 mkdir -p ~/.termux/boot
-cp ~/yt-reposter/termux/boot-start.sh ~/.termux/boot/start-yt-reposter
+cp ~/youtube-reposter/termux/boot-start.sh ~/.termux/boot/start-yt-reposter
 chmod +x ~/.termux/boot/start-yt-reposter
 ```
 
 In Android settings, set both Termux and Termux:Boot battery usage to
 **Unrestricted**. Android otherwise may kill background work regardless of
-the Python code. To inspect the service: `tail -f ~/yt-reposter/logs/service.log`.
+the Python code. To inspect the service: `tail -f ~/youtube-reposter/logs/service.log`.
 
 To publish the safe repository from this computer after checking the ignored
 files, create an empty GitHub repository and run:
