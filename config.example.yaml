@@ -1,0 +1,34 @@
+# Copy this file to config.yaml and fill in real values.
+# All relative paths below are resolved relative to this file's directory.
+
+source_channel:
+  # The YouTube channel ID (starts with "UC...") to watch for new Shorts.
+  channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+
+destination_channel:
+  # OAuth 2.0 "Desktop app" client secret JSON, downloaded from Google Cloud Console,
+  # authorized for the Google account that owns the destination channel.
+  oauth_client_json: "credentials/client_secret.json"
+  # Created automatically on first run after the interactive OAuth login.
+  token_json: "credentials/token.json"
+
+# Where Shorts are temporarily downloaded to before upload.
+download_folder: "downloads"
+# SQLite database tracking every video already uploaded (duplicate protection).
+database: "shorts.db"
+# Folder for app.log / error.log / upload.log.
+log_folder: "logs"
+
+# How often to check the source channel for a new Short.
+check_interval_minutes: 15
+# Max attempts for any retryable operation (download, upload, API call).
+max_retry_attempts: 5
+# Base delay (seconds) between retries; grows exponentially.
+retry_delay_seconds: 5
+# Delete the local copy once it's been uploaded to the destination channel.
+delete_download_after_upload: true
+
+discord:
+  enabled: true
+  # Discord webhook URL used for status/error notifications.
+  webhook_url: "https://discord.com/api/webhooks/123456789/abcdef..."

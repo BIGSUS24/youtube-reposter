@@ -1,0 +1,10 @@
+yt-dlp>=2025.1.1
+google-api-python-client>=2.100
+google-auth-oauthlib>=1.2
+google-auth>=2.25
+tenacity>=8.2
+PyYAML>=6.0
+requests>=2.31
+tqdm>=4.66
+psutil>=5.9
+imageio-ffmpeg>=0.6
