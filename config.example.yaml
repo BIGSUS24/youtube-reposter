@@ -1,9 +1,12 @@
 # Copy this file to config.yaml and fill in real values.
 # All relative paths below are resolved relative to this file's directory.
 
-source_channel:
-  # The YouTube channel ID (starts with "UC...") to watch for new Shorts.
-  channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+source_channels:
+  # Up to 5 YouTube channel IDs (each starts with "UC...") to watch for new Shorts.
+  - name: "Source 1"
+    channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+  - name: "Source 2"
+    channel_id: "UCyyyyyyyyyyyyyyyyyyyyyy"
 
 destination_channel:
   # OAuth 2.0 "Desktop app" client secret JSON, downloaded from Google Cloud Console,
@@ -19,8 +22,11 @@ database: "shorts.db"
 # Folder for app.log / error.log / upload.log.
 log_folder: "logs"
 
-# How often to check the source channel for a new Short.
+# How often to check the source channels for new Shorts.
 check_interval_minutes: 15
+# Max new Shorts to upload from each source channel per cycle.
+# Keep this at 1 unless you intentionally want backlog uploads.
+max_shorts_per_channel_per_cycle: 1
 # Max attempts for any retryable operation (download, upload, API call).
 max_retry_attempts: 5
 # Base delay (seconds) between retries; grows exponentially.

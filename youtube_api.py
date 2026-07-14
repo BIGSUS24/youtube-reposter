@@ -131,24 +131,32 @@ class YouTubeClient:
         return self._yt is not None
 
     def get_latest_short(self, channel_id: str) -> VideoInfo | None:
-        return self._retry(self._get_latest_short)(channel_id)
+        shorts = self.get_recent_shorts(channel_id, max_results=5)
+        return shorts[0] if shorts else None
 
-    def _get_latest_short(self, channel_id: str) -> VideoInfo | None:
+    def get_recent_shorts(
+        self, channel_id: str, max_results: int = 5
+    ) -> list[VideoInfo]:
+        return self._retry(self._get_recent_shorts)(channel_id, max_results)
+
+    def _get_recent_shorts(
+        self, channel_id: str, max_results: int = 5
+    ) -> list[VideoInfo]:
         try:
             channels = self._yt.channels().list(
                 part="contentDetails", id=channel_id).execute()
             items = channels.get("items", [])
             if not items:
-                return None
+                return []
             uploads = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
             playlist = self._yt.playlistItems().list(
                 part="snippet,contentDetails", playlistId=uploads,
-                maxResults=5).execute()
+                maxResults=max(1, min(max_results, 50))).execute()
             video_ids = [i["contentDetails"]["videoId"]
                          for i in playlist.get("items", [])]
             if not video_ids:
-                return None
+                return []
 
             videos = self._yt.videos().list(
                 part="contentDetails,snippet",
@@ -158,6 +166,7 @@ class YouTubeClient:
                 videos.get("items", []),
                 key=lambda v: v["snippet"]["publishedAt"],
                 reverse=True)
+            shorts: list[VideoInfo] = []
             for video in candidates:
                 duration = _parse_duration(
                     video["contentDetails"].get("duration", ""))
@@ -166,15 +175,16 @@ class YouTubeClient:
                     thumbs = snippet.get("thumbnails", {})
                     thumb = (thumbs.get("high") or thumbs.get("medium")
                              or thumbs.get("default") or {})
-                    return VideoInfo(
+                    shorts.append(VideoInfo(
                         video_id=video["id"],
                         title=snippet.get("title", ""),
                         description=snippet.get("description", ""),
                         duration_seconds=duration,
                         published_at=snippet["publishedAt"],
                         thumbnail_url=thumb.get("url", ""),
-                    )
-            return None
+                        source_channel_id=channel_id,
+                    ))
+            return shorts
         except googleapiclient.errors.HttpError as exc:
             raise _classify(exc) from exc
 

@@ -6,6 +6,7 @@ import signal
 import sys
 import threading
 import time
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -27,6 +28,15 @@ log = logging_setup.get_logger(__name__)
 def _resolve(base: Path, value: str) -> Path:
     p = Path(value)
     return p if p.is_absolute() else (base / p)
+
+
+def _source_label(source: dict) -> str:
+    return source.get("name") or source["channel_id"]
+
+
+def _source_fetch_limit(config: dict) -> int:
+    value = int(config.get("max_shorts_per_channel_per_cycle", 1))
+    return max(1, min(value, 5))
 
 
 def build_app(
@@ -170,34 +180,77 @@ def run_cycle(components: dict) -> None:
     state = components["state"]
     state_mgr = components["state_mgr"]
 
-    video = client.get_latest_short(config["source_channel"]["channel_id"])
-    if video is None:
-        log.info("No new short found")
-        notifier.send("No new short found")
+    per_source_limit = _source_fetch_limit(config)
+    candidates: list[utils.VideoInfo] = []
+    checked_fields: list[dict] = []
+
+    for source in config["source_channels"]:
+        source_name = _source_label(source)
+        state.current_task = f"checking:{source_name}"
+        state_mgr.save(state)
+
+        videos = client.get_recent_shorts(
+            source["channel_id"],
+            max_results=max(5, per_source_limit),
+        )
+        if not videos:
+            log.info("No short found for %s", source_name)
+            checked_fields.append({"name": source_name, "value": "no shorts"})
+            continue
+
+        new_videos: list[utils.VideoInfo] = []
+        for video in videos:
+            tagged = replace(
+                video,
+                source_channel_id=source["channel_id"],
+                source_channel_name=source_name,
+            )
+            if db.is_uploaded(tagged.video_id):
+                continue
+            new_videos.append(tagged)
+
+        selected = new_videos[:per_source_limit]
+        candidates.extend(selected)
+        status = f"{len(selected)} new" if selected else "no new shorts"
+        checked_fields.append({"name": source_name, "value": status})
+
+    if not candidates:
+        log.info("No new short found across %d source channel(s)", len(config["source_channels"]))
+        notifier.send("No new short found", fields=checked_fields)
         return
 
-    if db.is_uploaded(video.video_id):
-        log.info("Duplicate detected: %s", video.title)
-        notifier.send("Duplicate detected", video.title, color=notifier_mod.COLOR_WARNING)
-        return
+    for video in sorted(candidates, key=lambda item: item.published_at):
+        if db.is_uploaded(video.video_id):
+            log.info("Duplicate detected: %s", video.title)
+            notifier.send(
+                "Duplicate detected",
+                video.title,
+                color=notifier_mod.COLOR_WARNING,
+                fields=[{"name": "Source Channel", "value": video.source_channel_name or "unknown"}],
+            )
+            continue
 
-    notifier.send("New short detected", video.title)
-    state.current_task = f"downloading:{video.video_id}"
-    state_mgr.save(state)
+        notifier.send(
+            "New short detected",
+            video.title,
+            fields=[{"name": "Source Channel", "value": video.source_channel_name or "unknown"}],
+        )
+        state.current_task = f"downloading:{video.video_id}"
+        state_mgr.save(state)
 
-    path = components["downloader"].download(video)
+        path = components["downloader"].download(video)
 
-    try:
-        components["uploader"].upload(path, video)
-    except uploader.DuplicateUploadError:
-        pass  # already logged/notified inside uploader
-    except youtube_api.QuotaExceededError as exc:
-        log.warning("Quota exceeded during upload: %s", exc)
-        notifier.error(exc, "youtube_api", "uploading")
-        return
+        try:
+            components["uploader"].upload(path, video)
+        except uploader.DuplicateUploadError:
+            pass  # already logged/notified inside uploader
+        except youtube_api.QuotaExceededError as exc:
+            log.warning("Quota exceeded during upload: %s", exc)
+            notifier.error(exc, "youtube_api", "uploading")
+            return
 
-    if config["delete_download_after_upload"]:
-        components["downloader"].cleanup(video.video_id)
+        if config["delete_download_after_upload"]:
+            components["downloader"].cleanup(video.video_id)
 
     state.last_successful_run = utils.utc_now_iso()
     state.current_task = "idle"

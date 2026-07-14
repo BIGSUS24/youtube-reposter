@@ -97,6 +97,7 @@ class Notifier:
             {"name": "Source", "value": f"https://youtu.be/{video.video_id}", "inline": True},
             {"name": "Destination", "value": f"https://youtu.be/{uploaded_id}", "inline": True},
             {"name": "Channel", "value": channel_name, "inline": True},
+            {"name": "Source Channel", "value": video.source_channel_name or "unknown", "inline": True},
             {"name": "Duration", "value": f"{video.duration_seconds}s", "inline": True},
             {"name": "Size", "value": human_size(file_size), "inline": True},
             {"name": "Uploaded At", "value": upload_time_iso, "inline": True},

@@ -70,8 +70,8 @@ git push -u origin main
 If a real Discord webhook was ever committed or posted publicly, regenerate it
 in Discord before publishing.
 
-Watches **Channel A** (a channel you own or are authorized to use) for its
-newest Short, and automatically uploads it to
+Watches up to **5 source channels** for new Shorts, and automatically uploads
+them to
 **Channel B** (your channel) — same title, same description, no duplicates,
 runs forever, and recovers from crashes/reboots/internet loss on its own.
 
@@ -86,7 +86,7 @@ out. Follow them in order.
 2. [Install Termux + Debian (on your Android phone)](#2-install-termux--debian-on-your-android-phone)
 3. [Get the project files onto the phone](#3-get-the-project-files-onto-the-phone)
 4. [Install Python packages](#4-install-python-packages)
-5. [Find Channel A's Channel ID](#5-find-channel-as-channel-id)
+5. [Find source channel IDs](#5-find-source-channel-ids)
 6. [Set up Channel B on Google Cloud (OAuth)](#6-set-up-channel-b-on-google-cloud-oauth)
 7. [Set up the Discord webhook (optional but recommended)](#7-set-up-the-discord-webhook-optional-but-recommended)
 8. [Fill in config.yaml](#8-fill-in-configyaml)
@@ -105,8 +105,8 @@ out. Follow them in order.
 - An Android phone with some free storage (a few GB is plenty).
 - A Google account for **Channel B** — the channel that will receive the
   reposted videos. You need to be able to log into this account.
-- The **Channel ID or URL** of **Channel A** — the channel you're copying
-  Shorts from. You don't need to own it or log into it.
+- The **Channel IDs or URLs** of the source channels you're copying Shorts
+  from. You don't need to own them or log into them.
 - (Optional) A Discord server where you want status messages sent.
 - About 20–30 minutes, mostly waiting for installs.
 
@@ -179,10 +179,10 @@ terminal** before running the bot. (The restart-forever script in
 
 ---
 
-## 5. Find Channel A's Channel ID
+## 5. Find source channel IDs
 
-Channel A is the channel you're copying Shorts **from**. You do not need to
-log into it or own it — you only need its ID.
+Source channels are the channels you're copying Shorts **from**. You do not need to
+log into them or own them - you only need their IDs.
 
 A channel ID always looks like `UC` followed by 22 characters, e.g.
 `UCX6OQ3DkcsbYNE6H8uQQuVA`.
@@ -200,7 +200,7 @@ channels today), you need one extra step to find the real ID:
 4. You'll see something like `"channelId":"UCX6OQ3DkcsbYNE6H8uQQuVA"` — copy
    the `UC...` value (without the quotes).
 
-Keep this ID handy — it goes into `config.yaml` in [step 8](#8-fill-in-configyaml).
+Keep each ID handy - they go into `config.yaml` in [step 8](#8-fill-in-configyaml).
 
 ---
 
@@ -297,7 +297,9 @@ Edit these values (everything else can stay as-is):
 
 | Key | What to put there |
 |---|---|
-| `source_channel.channel_id` | Channel A's ID from [section 5](#5-find-channel-as-channel-id) |
+| `source_channels[].channel_id` | Each source channel ID from [section 5](#5-find-source-channel-ids), up to 5 total |
+| `source_channels[].name` | A label for Discord/logs, e.g. `Source 1` |
+| `max_shorts_per_channel_per_cycle` | Leave as `1` unless you intentionally want backlog uploads |
 | `destination_channel.oauth_client_json` | Leave as `credentials/client_secret.json` if you followed section 6.5 exactly |
 | `destination_channel.token_json` | Leave as `credentials/token.json` — created automatically |
 | `discord.enabled` | `true` if you set up Discord, otherwise `false` |
@@ -305,6 +307,16 @@ Edit these values (everything else can stay as-is):
 
 Everything else (`check_interval_minutes`, `max_retry_attempts`, etc.) has
 sane defaults — leave them unless you know you want to change them.
+
+Example source list:
+
+```yaml
+source_channels:
+  - name: "Source 1"
+    channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+  - name: "Source 2"
+    channel_id: "UCyyyyyyyyyyyyyyyyyyyyyy"
+```
 
 Save and exit nano: `Ctrl+O`, then `Enter`, then `Ctrl+X`.
 
@@ -430,7 +442,7 @@ Detach without stopping it: press `Ctrl+B`, then `D`. Reattach any time with
 
 The SQLite `uploaded_videos` table is the source of truth for what has
 already been reposted — every successful upload is recorded there, and every
-new candidate from Channel A is checked against it **before** download even
+new candidate from any source channel is checked against it **before** download even
 starts.
 
 `state.json` covers the edge case where the process dies *after* uploading to
@@ -471,7 +483,7 @@ after a crash mid-upload.
 
 ```sql
 CREATE TABLE uploaded_videos (
-    video_id          TEXT PRIMARY KEY,  -- Channel A's original video ID
+    video_id          TEXT PRIMARY KEY,  -- original source video ID
     upload_date       TEXT NOT NULL,     -- ISO-8601 UTC timestamp
     uploaded_video_id TEXT NOT NULL,     -- the new video ID on Channel B
     title             TEXT NOT NULL
