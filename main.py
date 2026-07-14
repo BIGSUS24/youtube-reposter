@@ -217,6 +217,11 @@ def run_cycle(components: dict) -> None:
     if not candidates:
         log.info("No new short found across %d source channel(s)", len(config["source_channels"]))
         notifier.send("No new short found", fields=checked_fields)
+        state.last_successful_run = utils.utc_now_iso()
+        state.current_task = "idle"
+        state.current_download = None
+        state.retry_count = 0
+        state_mgr.save(state)
         return
 
     for video in sorted(candidates, key=lambda item: item.published_at):
